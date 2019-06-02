@@ -344,7 +344,9 @@ CLEANUP
   case 0:
     break;
 
-  default:
+  default: {
+    char remote_name[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &s_addr, &remote_name, INET_ADDRSTRLEN);
     if (node != NULL) {
       pthread_mutex_lock(&mutex);
       removelist(node, free);
@@ -359,10 +361,17 @@ CLEANUP
       closesock(&testsock);
     }
 
-    PNONCRIT("Unknown", ERROR)
-    printlineinfo();
+    if (ERROR == EBADIDENT) {
+      fprintf(stderr, "Bad ident received from %s\n", remote_name);
+    } else if (ERROR == EPIPE) {
+      // silent
+    } else {
+      PNONCRIT("Unknown", ERROR)
+      printlineinfo();
+    }
     CLEARERRLOG
     break;
+  }
   }
 
   CLEARERRLOG
