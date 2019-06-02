@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
+#include <string.h>
 #ifdef __MACH__
 #include <CoreFoundation/CFBase.h>
 #endif
