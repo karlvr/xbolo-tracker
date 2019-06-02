@@ -149,6 +149,9 @@ TRY
   }
 
 CLEANUP
+  if (errno != 0) {
+    perror("Failed to start");
+  }
 ERRHANDLER(0, -1)
 END
 }
