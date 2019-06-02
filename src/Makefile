@@ -1,6 +1,6 @@
 CC = gcc
 LFLAGS = -pthread 
-CFLAGS = -g -Wall -pedantic 
+CFLAGS = -g -Wall
 OUTPUT = tracker
 
 all: tracker
