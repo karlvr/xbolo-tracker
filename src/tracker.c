@@ -203,7 +203,7 @@ TRY
     if (recvblock(sock, &msg, sizeof(msg)) == -1) LOGFAIL(errno)
 
     if (msg == kTrackerHost) {
-      printf("%s: Hosted game received from %s\n", now, s_addr_name);
+      fprintf(stderr, "%s: Hosted game received from %s\n", now, s_addr_name);
       trackerhostlist = (struct TrackerHostList *)malloc(sizeof(struct TrackerHostList));
       trackerhostlist->addr.s_addr = s_addr;
       if (recvblock(sock, &trackerhostlist->game, sizeof(struct TrackerHost)) == -1) LOGFAIL(errno)
@@ -326,7 +326,7 @@ TRY
     else if (msg == kTrackerList) {
       uint32_t i;
 
-      printf("%s: List games received from %s\n", now, s_addr_name);
+      fprintf(stderr, "%s: List games received from %s\n", now, s_addr_name);
 
       if ((err = pthread_mutex_lock(&mutex))) LOGFAIL(err)
 
