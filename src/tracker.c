@@ -9,6 +9,8 @@
 #include <signal.h>
 #include <pthread.h>
 #include <sys/select.h>
+#include <time.h>
+#include <arpa/inet.h>
 // Ugh, icky hack to get select() working...
 #ifdef __has_feature
 #  if __has_feature(modules)
@@ -169,10 +171,18 @@ void *child(struct ThreadInfo *threadinfo) {
   struct ListNode *node = NULL;
   int i;
 
-TRY
   sock = threadinfo->sock;
   s_addr = threadinfo->s_addr;
   free(threadinfo);
+
+  char s_addr_name[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &s_addr, (char*) &s_addr_name, INET_ADDRSTRLEN);  
+
+  time_t rawtime;
+  time(&rawtime);
+  char now[25];
+  strncpy(now, ctime(&rawtime), 24);
+TRY
 
   if (recvblock(sock, &preamble, sizeof(preamble)) == -1) LOGFAIL(errno)
 
@@ -180,6 +190,7 @@ TRY
 
   if (preamble.version != TRACKERVERSION) {
     msg = kTrackerVersionErr;
+    fprintf(stderr, "%s Invalid tracker version %i from %s\n", now, preamble.version, s_addr_name);
     if (sendblock(sock, &msg, sizeof(msg)) != sizeof(msg)) LOGFAIL(errno)
     if (closesock(&sock)) LOGFAIL(errno)
     SUCCESS
@@ -192,6 +203,7 @@ TRY
     if (recvblock(sock, &msg, sizeof(msg)) == -1) LOGFAIL(errno)
 
     if (msg == kTrackerHost) {
+      printf("%s: Hosted game received from %s\n", now, s_addr_name);
       trackerhostlist = (struct TrackerHostList *)malloc(sizeof(struct TrackerHostList));
       trackerhostlist->addr.s_addr = s_addr;
       if (recvblock(sock, &trackerhostlist->game, sizeof(struct TrackerHost)) == -1) LOGFAIL(errno)
@@ -314,6 +326,8 @@ TRY
     else if (msg == kTrackerList) {
       uint32_t i;
 
+      printf("%s: List games received from %s\n", now, s_addr_name);
+
       if ((err = pthread_mutex_lock(&mutex))) LOGFAIL(err)
 
       for (i = 0, node = nextlist(&gamelist); node; node = nextlist(node)) {
@@ -348,8 +362,6 @@ CLEANUP
     break;
 
   default: {
-    char remote_name[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &s_addr, &remote_name, INET_ADDRSTRLEN);
     if (node != NULL) {
       pthread_mutex_lock(&mutex);
       removelist(node, free);
@@ -365,7 +377,7 @@ CLEANUP
     }
 
     if (ERROR == EBADIDENT) {
-      fprintf(stderr, "Bad ident received from %s\n", remote_name);
+      fprintf(stderr, "%s: Bad ident received from %s\n", now, s_addr_name);
     } else if (ERROR == EPIPE) {
       // silent
     } else {
